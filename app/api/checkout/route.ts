@@ -1,50 +1,35 @@
-import Stripe from "stripe";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const origin = new URL(request.url).origin;
+    const body = await req.json().catch(() => ({}));
+    const origin = req.headers.get('origin') || 'https://payment-site-azure.vercel.app';
 
     const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-
+      payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: 'inr',
             product_data: {
-              name: "Premium Product",
-              description: "Premium digital product",
+              name: body.title || 'Product Payment',
             },
-            unit_amount: 100,
+            unit_amount: body.amount ? Number(body.amount) * 100 : 50000,
           },
           quantity: 1,
         },
       ],
-
-      customer_creation: "always",
-
-      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+      mode: 'payment',
+      success_url: `${origin}/success`,
       cancel_url: `${origin}/cancel`,
     });
 
-    if (!session.url) {
-      return NextResponse.json(
-        { error: "Unable to create checkout session" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.redirect(session.url, 303);
-  } catch (error) {
-    console.error("Stripe Checkout Error:", error);
-
-    return NextResponse.json(
-      { error: "Payment checkout could not be created" },
-      { status: 500 }
-    );
+    return NextResponse.json({ url: session.url });
+  } catch (error: any) {
+    console.error('Stripe Checkout Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
