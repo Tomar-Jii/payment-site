@@ -5,7 +5,18 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}));
+    let body: any = {};
+    const contentType = req.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+      body = await req.json().catch(() => ({}));
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
+      const formData = await req.formData().catch(() => null);
+      if (formData) {
+        body = Object.fromEntries(formData.entries());
+      }
+    }
+
     const origin = req.headers.get('origin') || 'https://payment-site-azure.vercel.app';
 
     const session = await stripe.checkout.sessions.create({
@@ -27,7 +38,11 @@ export async function POST(req: Request) {
       cancel_url: `${origin}/cancel`,
     });
 
-    return NextResponse.json({ url: session.url });
+    if (session.url) {
+      return NextResponse.redirect(session.url, { status: 303 });
+    }
+
+    return NextResponse.json({ error: 'Session URL not found' }, { status: 500 });
   } catch (error: any) {
     console.error('Stripe Checkout Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
