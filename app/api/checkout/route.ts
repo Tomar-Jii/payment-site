@@ -19,16 +19,21 @@ export async function POST(req: Request) {
 
     const origin = req.headers.get('origin') || 'https://payment-site-azure.vercel.app';
 
+    // Amount calculation ($1 = 100 cents)
+    const rawAmount = body.amount || body.price || 1;
+    const unitAmount = Math.round(Number(rawAmount) * 100);
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
+      billing_address_collection: 'required',
       line_items: [
         {
           price_data: {
-            currency: 'inr',
+            currency: 'usd',
             product_data: {
-              name: body.title || 'Product Payment',
+              name: body.title || body.name || 'Sample Product',
             },
-            unit_amount: body.amount ? Number(body.amount) * 100 : 50000,
+            unit_amount: unitAmount,
           },
           quantity: 1,
         },
