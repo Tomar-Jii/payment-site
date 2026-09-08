@@ -18,7 +18,7 @@ export async function POST(request: Request) {
               name: "Premium Product",
               description: "Premium digital product",
             },
-            unit_amount: 1000,
+            unit_amount: 100,
           },
           quantity: 1,
         },

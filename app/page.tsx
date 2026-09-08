@@ -30,7 +30,7 @@ export default function Home() {
 
               <div className="flex items-center justify-between mt-7">
                 <span className="text-3xl font-bold text-slate-900">
-                  $10.00
+                  $1.00
                 </span>
 
                 <form action="/api/checkout" method="POST">
